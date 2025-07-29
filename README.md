@@ -116,5 +116,3 @@ cargo install cargo-zigbuild
 MIT — do whatever you want, as long as you include the license.
 
 ---
-
-Want a GitHub Actions workflow to auto-build your mod for all platforms? Just ask!
