@@ -1,11 +1,20 @@
-# 🛠️ modbuild — Cross-platform TerraVox Mod Builder
+# 🛠️ modbuild - Cross-platform Mod Builder for TerraVox
 
-**modbuild** is a simple CLI tool to compile your TerraVox mods for all major platforms: **Linux**, **Windows**, and **macOS**.  
-It builds `.so`, `.dll`, and `.dylib` versions of your mod in one command, making mod development easy and portable.
+**modbuild** is the official tool used by [TerraVox](https://discord.gg/zKY3Tkk837) to compile mods for **Linux**, **Windows**, and **macOS**.  
+It turns your Rust-based mod into shared libraries (`.so`, `.dll`, `.dylib`) with just one command - no manual setup or cross-compilation headaches.
+
+---
+
+## 💡 What is this?
+
+TerraVox uses dynamic `.so`/`.dll`/`.dylib` files to load mods at runtime.  
+This tool builds those files for all platforms at once - so your mod works everywhere without needing a Mac or Windows machine.
 
 ---
 
 ## 📦 Installation
+
+Build it once:
 
 ```bash
 cd modbuild/
@@ -16,34 +25,38 @@ cargo build --release
 
 ## 🚀 Usage
 
-Run this in your mod project directory (where `Cargo.toml` is):
+Inside your mod crate (where `Cargo.toml` is), run:
 
 ```bash
 cargo run -p modbuild
 ```
 
-Or use the built binary:
+Or use the compiled binary:
 
 ```bash
 ./target/release/modbuild
 ```
 
+You'll see a clean report showing `.so`, `.dll`, and `.dylib` outputs.
+
 ---
 
-## 📁 Mod Project Setup
+## 📁 How to Set Up Your Mod
 
-Your mod must be a Rust crate with the following in `Cargo.toml`:
+In your `Cargo.toml`, make sure this is set:
 
 ```toml
 [lib]
 crate-type = ["cdylib"]
 ```
 
+This makes Rust compile your mod as a dynamic library.
+
 ---
 
-## 📂 Example Output
+## ✅ Example Output
 
-```
+```text
 🔧 Building for linux...
 ✅ Built linux: target/x86_64-unknown-linux-gnu/release/libhello.so
 🔧 Building for windows...
@@ -56,28 +69,25 @@ crate-type = ["cdylib"]
 
 ## 🧠 Requirements
 
-### Linux & Windows targets
+### Linux & Windows builds
 
-Install additional targets:
+Install the Windows target:
 
 ```bash
 rustup target add x86_64-pc-windows-gnu
 ```
 
-### macOS target (2 options):
+### macOS builds (2 options)
 
-#### Option 1: On macOS
-
-Just install the mac target:
+#### Option 1: Build on macOS
 
 ```bash
 rustup target add x86_64-apple-darwin
 ```
 
-#### Option 2: On Linux (with osxcross)
+#### Option 2: Build on Linux (with osxcross or zig)
 
-1. Install [`osxcross`](https://github.com/tpoechtrager/osxcross)
-2. Export toolchain paths:
+Use [osxcross](https://github.com/tpoechtrager/osxcross) and set:
 
 ```bash
 export PATH="$HOME/osxcross/target/bin:$PATH"
@@ -85,34 +95,37 @@ export CC=o64-clang
 export CXX=o64-clang++
 ```
 
-Or install [`cargo-zigbuild`](https://github.com/messense/cargo-zigbuild):
+Or install [cargo-zigbuild](https://github.com/messense/cargo-zigbuild):
 
 ```bash
 cargo install cargo-zigbuild
 ```
 
----
-
-## 🎯 What `modbuild` Does
-
-- Compiles your mod for:
-  - `x86_64-unknown-linux-gnu` → `.so`
-  - `x86_64-pc-windows-gnu` → `.dll`
-  - `x86_64-apple-darwin` → `.dylib`
-- Detects if macOS cross-compiler (`osxcross` or `zig`) is available
-- Outputs clear build results
+`modbuild` will detect this automatically.
 
 ---
 
-## 🔒 Compatibility
+## ⚙️ How It Works
+
+- Calls `cargo build` or `cargo zigbuild` for each target
+- Auto-detects macOS cross-compilation tools
+- Outputs shared libraries to:
+  - `target/x86_64-unknown-linux-gnu/release/lib*.so`
+  - `target/x86_64-pc-windows-gnu/release/lib*.dll`
+  - `target/x86_64-apple-darwin/release/lib*.dylib`
+
+---
+
+## 🧩 Compatibility
 
 - Rust 1.74+
-- TerraVox mods using `extern "C"` and `TerraVoxApi`
+- TerraVox mods using `extern "C"` and the `TerraVoxApi`
+- Works on Linux/macOS (Windows coming soon)
 
 ---
 
 ## 📜 License
 
-MIT — do whatever you want, as long as you include the license.
+MIT - use freely, modify freely, just include the license.
 
 ---
