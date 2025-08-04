@@ -35,7 +35,8 @@ fn main() {
         };
 
         let mut cmd = Command::new("cargo");
-        cmd.arg(if name.starts_with("mac") { "zigbuild" } else { "build" });
+        //cmd.arg(if name.starts_with("mac") { "zigbuild" } else { "build" });
+        cmd.arg("zigbuild");
 
         let status = cmd
           .args(["--release", "--target", target])
