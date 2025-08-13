@@ -1,13 +1,13 @@
-# 🛠️ modbuild - Cross-platform Mod Builder for TerraVox
+# 🛠️ modbuild - Cross-platform Mod Builder for Freven
 
-**modbuild** is the official tool used by [TerraVox](https://discord.gg/zKY3Tkk837) to compile mods for **Linux**, **Windows**, and **macOS**.  
+**modbuild** is the official tool used by [Freven](https://discord.gg/zKY3Tkk837) to compile mods for **Linux**, **Windows**, and **macOS**.  
 It turns your Rust-based mod into shared libraries (`.so`, `.dll`, `.dylib`) with just one command - no manual setup or cross-compilation headaches.
 
 ---
 
 ## 💡 What is this?
 
-TerraVox uses dynamic `.so`/`.dll`/`.dylib` files to load mods at runtime.  
+Freven uses dynamic `.so`/`.dll`/`.dylib` files to load mods at runtime.  
 This tool builds those files for all platforms at once - so your mod works everywhere without needing a Mac or Windows machine.
 
 ---
@@ -119,7 +119,7 @@ cargo install cargo-zigbuild
 ## 🧩 Compatibility
 
 - Rust 1.74+
-- TerraVox mods using `extern "C"` and the `TerraVoxApi`
+- Freven mods using `extern "C"` and the `FrevenApi`
 - Works on Linux/macOS (Windows coming soon)
 
 ---
