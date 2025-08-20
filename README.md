@@ -4,7 +4,7 @@
 It produces shared libraries (`.so`, `.dll`, `.dylib`) for multiple platforms from a single command.
 
 ---
-s
+
 ## 💡 Installation
 
 Build once:
@@ -33,7 +33,7 @@ Build all targets for your mod:
 Specify targets explicitly:
 
 ```bash
-./target/release/modbuild build --path /path/to/your/mod --out ./dist --targets linux,windows,mac-intel,mac-arm64
+./target/release/modbuild build --path /path/to/your/mod --out ./dist --targets linux,windows-gnu,windows-msvc,mac-intel,mac-arm64
 ```
 
 List all supported targets:
@@ -63,9 +63,12 @@ This allows Rust to produce `.so`, `.dll`, or `.dylib` files.
 Building for linux...
 Built linux successfully.
 Copied to ./dist/libmy_mod-linux.so
-Building for windows...
-Built windows successfully.
-Copied to ./dist/my_mod-windows.dll
+Building for windows-gnu...
+Built windows-gnu successfully.
+Copied to ./dist/my_mod-windows-gnu.dll
+Building for windows-msvc...
+Built windows-msvc successfully.
+Copied to ./dist/my_mod-windows-msvc.dll
 Building for mac-intel...
 Built mac-intel successfully.
 Copied to ./dist/libmy_mod-mac-intel.dylib
@@ -80,10 +83,11 @@ Copied to ./dist/libmy_mod-mac-arm64.dylib
 
 ### Linux & Windows
 
-Install the Windows target:
+Install the Windows targets:
 
 ```bash
 rustup target add x86_64-pc-windows-gnu
+rustup target add x86_64-pc-windows-msvc
 ```
 
 ### macOS builds
@@ -115,7 +119,8 @@ export CXX=o64-clang++
 - Detects macOS cross-compilation automatically
 - Outputs shared libraries to the `--out` directory, named like:
   - `lib<crate>-linux.so`
-  - `<crate>-windows.dll`
+  - `<crate>-windows-gnu.dll`
+  - `<crate>-windows-msvc.dll`
   - `lib<crate>-mac-intel.dylib`
   - `lib<crate>-mac-arm64.dylib`
 

@@ -1,4 +1,50 @@
-name: ci.yml
+name: CI
+
 on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
+  linux-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Cargo fmt check
+        run: cargo fmt --all -- --check
+
+      - name: Cargo clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Build modbuild (release)
+        run: cargo build --release
+
+      - name: Show targets
+        run: ./target/release/modbuild list-targets
+
+      - name: Smoke build (linux only)
+        run: ./target/release/modbuild build --path examples/example-mod --out dist --targets linux
+
+      - name: Assert artifact exists
+        run: test -f dist/libexample_mod-linux.so
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-linux
+          path: dist/*
+          if-no-files-found: error
