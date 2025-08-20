@@ -5,7 +5,7 @@ use std::process::Command;
 /// Get crate name from Cargo metadata (workspace-safe)
 pub fn get_crate_name(mod_path: &PathBuf) -> Result<String, String> {
     let output = Command::new("cargo")
-        .args(&["metadata", "--format-version", "1", "--no-deps"])
+        .args(["metadata", "--format-version", "1", "--no-deps"])
         .current_dir(mod_path)
         .output()
         .map_err(|e| format!("Failed to run cargo metadata: {e}"))?;
