@@ -1,7 +1,7 @@
+use crate::utils::{has_mac_compiler, has_zigbuild, is_host_triple};
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use crate::utils::{has_mac_compiler, has_zigbuild, is_host_triple};
 
 /// Represents a build target (OS + architecture)
 #[derive(Clone)]
@@ -15,11 +15,36 @@ pub struct BuildTarget {
 /// All supported targets
 pub fn all_targets() -> Vec<BuildTarget> {
     vec![
-        BuildTarget { name: "linux",        triple: "x86_64-unknown-linux-gnu", ext: "so",   needs_mac: false },
-        BuildTarget { name: "windows-gnu",  triple: "x86_64-pc-windows-gnu",    ext: "dll",  needs_mac: false },
-        BuildTarget { name: "windows-msvc", triple: "x86_64-pc-windows-msvc",   ext: "dll",  needs_mac: false },
-        BuildTarget { name: "mac-intel",    triple: "x86_64-apple-darwin",      ext: "dylib", needs_mac: true },
-        BuildTarget { name: "mac-arm64",    triple: "aarch64-apple-darwin",     ext: "dylib", needs_mac: true },
+        BuildTarget {
+            name: "linux",
+            triple: "x86_64-unknown-linux-gnu",
+            ext: "so",
+            needs_mac: false,
+        },
+        BuildTarget {
+            name: "windows-gnu",
+            triple: "x86_64-pc-windows-gnu",
+            ext: "dll",
+            needs_mac: false,
+        },
+        BuildTarget {
+            name: "windows-msvc",
+            triple: "x86_64-pc-windows-msvc",
+            ext: "dll",
+            needs_mac: false,
+        },
+        BuildTarget {
+            name: "mac-intel",
+            triple: "x86_64-apple-darwin",
+            ext: "dylib",
+            needs_mac: true,
+        },
+        BuildTarget {
+            name: "mac-arm64",
+            triple: "aarch64-apple-darwin",
+            ext: "dylib",
+            needs_mac: true,
+        },
     ]
 }
 
@@ -28,16 +53,21 @@ pub fn select_targets(filter: Option<String>) -> Vec<BuildTarget> {
     let all = all_targets();
     if let Some(f) = filter {
         f.split(',')
-          .filter_map(|name| all.iter().find(|t| t.name == name.trim()))
-          .cloned()
-          .collect()
+            .filter_map(|name| all.iter().find(|t| t.name == name.trim()))
+            .cloned()
+            .collect()
     } else {
         all
     }
 }
 
 /// Build a crate for a specific target
-pub fn build_for_target(crate_name: &str, out: &PathBuf, target: &BuildTarget, mod_path: &PathBuf) -> Result<(), String> {
+pub fn build_for_target(
+    crate_name: &str,
+    out: &PathBuf,
+    target: &BuildTarget,
+    mod_path: &PathBuf,
+) -> Result<(), String> {
     if target.needs_mac && !has_mac_compiler() {
         return Err(format!("Skipping {}: mac compiler not found", target.name));
     }
@@ -55,17 +85,19 @@ pub fn build_for_target(crate_name: &str, out: &PathBuf, target: &BuildTarget, m
         has_zigbuild() && has_mac_compiler()
     } else if !is_host_triple(target.triple) {
         has_zigbuild()
-    } else { false };
+    } else {
+        false
+    };
     let cargo_cmd = if use_zig { "zigbuild" } else { "build" };
 
     let status = Command::new("cargo")
-      .arg(cargo_cmd)
-      .args(["--release", "--target", target.triple])
-      .current_dir(mod_path)
-      .stdout(Stdio::inherit())
-      .stderr(Stdio::inherit())
-      .status()
-      .map_err(|e| format!("Failed to run cargo: {e}"))?;
+        .arg(cargo_cmd)
+        .args(["--release", "--target", target.triple])
+        .current_dir(mod_path)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()
+        .map_err(|e| format!("Failed to run cargo: {e}"))?;
 
     if !status.success() {
         return Err(format!("Build failed for {}", target.name));
@@ -73,7 +105,10 @@ pub fn build_for_target(crate_name: &str, out: &PathBuf, target: &BuildTarget, m
 
     println!("Built {} successfully.", target.name);
 
-    let built_path = mod_path.join(format!("target/{}/release/{}.{}", target.triple, lib_basename, target.ext));
+    let built_path = mod_path.join(format!(
+        "target/{}/release/{}.{}",
+        target.triple, lib_basename, target.ext
+    ));
     if !built_path.exists() {
         return Err(format!("Built file not found: {}", built_path.display()));
     }

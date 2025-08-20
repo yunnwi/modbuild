@@ -2,7 +2,11 @@ use std::env;
 use std::process::Command;
 
 pub fn has_cmd(cmd: &str, arg: &str) -> bool {
-    Command::new(cmd).arg(arg).output().map(|o| o.status.success()).unwrap_or(false)
+    Command::new(cmd)
+        .arg(arg)
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
 }
 
 /// Is `cargo zigbuild` available on this machine?

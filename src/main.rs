@@ -7,7 +7,11 @@ use std::path::PathBuf;
 
 /// Cross-platform mod builder
 #[derive(Parser)]
-#[command(name = "modbuild", version, about = "Cross-platform mod builder for Freven")]
+#[command(
+    name = "modbuild",
+    version,
+    about = "Cross-platform mod builder for Freven"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
