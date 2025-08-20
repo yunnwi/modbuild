@@ -25,7 +25,7 @@ enum Commands {
         #[arg(short, long, default_value = "dist")]
         out: PathBuf,
 
-        /// Comma-separated list of targets (linux, windows, mac-intel, mac-arm64)
+        /// Comma-separated list of targets (linux, windows-gnu, windows-msvc, mac-intel, mac-arm64)
         #[arg(short, long)]
         targets: Option<String>,
     },
@@ -39,11 +39,18 @@ fn main() {
 
     match cli.command {
         Commands::Build { path, out, targets } => {
+            let path = std::fs::canonicalize(&path).unwrap_or(path);
+
             let targets = build::select_targets(targets);
             let crate_name = crate_info::get_crate_name(&path).unwrap_or_else(|e| {
-                eprintln!("Failed to read Cargo.toml: {e}");
+                eprintln!("Failed to read Cargo.toml at {}: {e}", path.display());
                 std::process::exit(1);
             });
+
+            if let Err(e) = crate_info::ensure_cdylib(&path) {
+                eprintln!("Invalid mod at {}: {e}", path.display());
+                std::process::exit(1);
+            }
 
             for target in targets {
                 if let Err(e) = build::build_for_target(&crate_name, &out, &target, &path) {
@@ -54,7 +61,7 @@ fn main() {
         Commands::ListTargets => {
             println!("Available targets:");
             for t in build::all_targets() {
-                println!(" - {}", t.name);
+                println!(" - {} ({})", t.name, t.triple);
             }
         }
     }
