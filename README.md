@@ -1,75 +1,84 @@
 # 🛠️ modbuild - Cross-platform Mod Builder for Freven
 
-**modbuild** is the official tool used by [Freven](https://discord.gg/zKY3Tkk837) to compile mods for **Linux**, **Windows**, and **macOS**.  
-It turns your Rust-based mod into shared libraries (`.so`, `.dll`, `.dylib`) with just one command - no manual setup or cross-compilation headaches.
+**modbuild** is a tool used by [Freven](https://discord.gg/zKY3Tkk837) to compile Rust-based mods for **Linux**, **Windows**, and **macOS**.  
+It produces shared libraries (`.so`, `.dll`, `.dylib`) for multiple platforms from a single command.
 
 ---
+s
+## 💡 Installation
 
-## 💡 What is this?
-
-Freven uses dynamic `.so`/`.dll`/`.dylib` files to load mods at runtime.  
-This tool builds those files for all platforms at once - so your mod works everywhere without needing a Mac or Windows machine.
-
----
-
-## 📦 Installation
-
-Build it once:
+Build once:
 
 ```bash
 cd modbuild/
 cargo build --release
 ```
 
+Or install globally:
+
+```bash
+cargo install --path .
+```
+
 ---
 
 ## 🚀 Usage
 
-Inside your mod crate (where `Cargo.toml` is), run:
+Build all targets for your mod:
 
 ```bash
-cargo run -p modbuild
+./target/release/modbuild build --path /path/to/your/mod --out ./dist
 ```
 
-Or use the compiled binary:
+Specify targets explicitly:
 
 ```bash
-./target/release/modbuild
+./target/release/modbuild build --path /path/to/your/mod --out ./dist --targets linux,windows,mac-intel,mac-arm64
 ```
 
-You'll see a clean report showing `.so`, `.dll`, and `.dylib` outputs.
+List all supported targets:
+
+```bash
+./target/release/modbuild list-targets
+```
 
 ---
 
-## 📁 How to Set Up Your Mod
+## 📁 Setting Up Your Mod
 
-In your `Cargo.toml`, make sure this is set:
+In your `Cargo.toml`, configure your library as a dynamic library:
 
 ```toml
 [lib]
 crate-type = ["cdylib"]
 ```
 
-This makes Rust compile your mod as a dynamic library.
+This allows Rust to produce `.so`, `.dll`, or `.dylib` files.
 
 ---
 
 ## ✅ Example Output
 
-```text
-🔧 Building for linux...
-✅ Built linux: target/x86_64-unknown-linux-gnu/release/libhello.so
-🔧 Building for windows...
-✅ Built windows: target/x86_64-pc-windows-gnu/release/libhello.dll
-🔧 Building for mac...
-✅ Built mac: target/x86_64-apple-darwin/release/libhello.dylib
+```bash
+Building for linux...
+Built linux successfully.
+Copied to ./dist/libmy_mod-linux.so
+Building for windows...
+Built windows successfully.
+Copied to ./dist/my_mod-windows.dll
+Building for mac-intel...
+Built mac-intel successfully.
+Copied to ./dist/libmy_mod-mac-intel.dylib
+Building for mac-arm64...
+Built mac-arm64 successfully.
+Copied to ./dist/libmy_mod-mac-arm64.dylib
 ```
 
 ---
 
 ## 🧠 Requirements
 
-### Linux & Windows builds
+### Linux & Windows
 
 Install the Windows target:
 
@@ -77,55 +86,49 @@ Install the Windows target:
 rustup target add x86_64-pc-windows-gnu
 ```
 
-### macOS builds (2 options)
+### macOS builds
 
 #### Option 1: Build on macOS
 
 ```bash
 rustup target add x86_64-apple-darwin
+rustup target add aarch64-apple-darwin
 ```
 
-#### Option 2: Build on Linux (with osxcross or zig)
+#### Option 2: Cross-build on Linux
 
-Use [osxcross](https://github.com/tpoechtrager/osxcross) and set:
+Install [cargo-zigbuild](https://github.com/messense/cargo-zigbuild) or [osxcross](https://github.com/tpoechtrager/osxcross):
 
 ```bash
-export PATH="$HOME/osxcross/target/bin:$PATH"
+cargo install cargo-zigbuild
 export CC=o64-clang
 export CXX=o64-clang++
 ```
 
-Or install [cargo-zigbuild](https://github.com/messense/cargo-zigbuild):
-
-```bash
-cargo install cargo-zigbuild
-```
-
-`modbuild` will detect this automatically.
+`modbuild` will detect the cross-compilation tools automatically.
 
 ---
 
 ## ⚙️ How It Works
 
-- Calls `cargo build` or `cargo zigbuild` for each target
-- Auto-detects macOS cross-compilation tools
-- Outputs shared libraries to:
-  - `target/x86_64-unknown-linux-gnu/release/lib*.so`
-  - `target/x86_64-pc-windows-gnu/release/lib*.dll`
-  - `target/x86_64-apple-darwin/release/lib*.dylib`
+- Uses `cargo build` or `cargo zigbuild` per target
+- Detects macOS cross-compilation automatically
+- Outputs shared libraries to the `--out` directory, named like:
+  - `lib<crate>-linux.so`
+  - `<crate>-windows.dll`
+  - `lib<crate>-mac-intel.dylib`
+  - `lib<crate>-mac-arm64.dylib`
 
 ---
 
 ## 🧩 Compatibility
 
 - Rust 1.74+
-- Freven mods using `extern "C"` and the `FrevenApi`
-- Works on Linux/macOS (Windows coming soon)
+- Freven mods using `extern "C"` and `FrevenApi`
+- Works on Linux, Windows, and macOS
 
 ---
 
 ## 📜 License
 
-MIT - use freely, modify freely, just include the license.
-
----
+MIT - use freely, modify freely, include the license.
