@@ -1,3 +1,5 @@
+// modbuild/src/main.rs
+
 mod build;
 mod crate_info;
 mod utils;
@@ -46,10 +48,6 @@ fn main() {
             let path = std::fs::canonicalize(&path).unwrap_or(path);
 
             let targets = build::select_targets(targets);
-            let crate_name = crate_info::get_crate_name(&path).unwrap_or_else(|e| {
-                eprintln!("Failed to read Cargo.toml at {}: {e}", path.display());
-                std::process::exit(1);
-            });
 
             if let Err(e) = crate_info::ensure_cdylib(&path) {
                 eprintln!("Invalid mod at {}: {e}", path.display());
@@ -57,7 +55,7 @@ fn main() {
             }
 
             for target in targets {
-                if let Err(e) = build::build_for_target(&crate_name, &out, &target, &path) {
+                if let Err(e) = build::build_for_target(&out, &target, &path) {
                     eprintln!("{e}");
                 }
             }

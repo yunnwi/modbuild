@@ -1,5 +1,8 @@
+// modbuild/src/build.rs
+
 use crate::utils::{has_mac_compiler, has_zigbuild, is_host_triple};
 use std::fs;
+use std::io::BufRead;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
@@ -53,9 +56,9 @@ pub fn select_targets(filter: Option<String>) -> Vec<BuildTarget> {
     let all = all_targets();
     if let Some(f) = filter {
         f.split(',')
-            .filter_map(|name| all.iter().find(|t| t.name == name.trim()))
-            .cloned()
-            .collect()
+          .filter_map(|name| all.iter().find(|t| t.name == name.trim()))
+          .cloned()
+          .collect()
     } else {
         all
     }
@@ -63,7 +66,6 @@ pub fn select_targets(filter: Option<String>) -> Vec<BuildTarget> {
 
 /// Build a crate for a specific target
 pub fn build_for_target(
-    crate_name: &str,
     out: &PathBuf,
     target: &BuildTarget,
     mod_path: &PathBuf,
@@ -72,13 +74,12 @@ pub fn build_for_target(
         return Err(format!("Skipping {}: mac compiler not found", target.name));
     }
 
-    println!("Building for {}...", target.name);
+    #[cfg(target_os = "macos")]
+    if target.triple == "x86_64-pc-windows-msvc" {
+        return Err("Skipping windows-msvc: cannot cross-compile MSVC from macOS".into())
+    }
 
-    let lib_basename = if target.ext == "dll" {
-        crate_name.replace('-', "_")
-    } else {
-        format!("lib{}", crate_name.replace('-', "_"))
-    };
+    println!("Building for {}...", target.name);
 
     // Choose cargo subcommand: prefer zigbuild for macOS / cross, else plain build
     let use_zig = if target.needs_mac {
@@ -88,37 +89,89 @@ pub fn build_for_target(
     } else {
         false
     };
-    let cargo_cmd = if use_zig { "zigbuild" } else { "build" };
 
-    let status = Command::new("cargo")
-        .arg(cargo_cmd)
-        .args(["--release", "--target", target.triple])
-        .current_dir(mod_path)
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .status()
-        .map_err(|e| format!("Failed to run cargo: {e}"))?;
+    let mut cmd = Command::new("cargo");
+    cmd.current_dir(mod_path);
 
+    if use_zig {
+        cmd.arg("zigbuild");
+    } else {
+        cmd.arg("build");
+    }
+
+    cmd.args(["--release", "--target", target.triple, "--message-format=json"]);
+    cmd.stdout(Stdio::piped());
+    cmd.stderr(Stdio::inherit());
+
+    let mut child = cmd.spawn().map_err(|e| format!("Failed to run cargo: {e}"))?;
+    let stdout = std::io::BufReader::new(child.stdout.take().unwrap());
+
+    let mut built_files: Vec<PathBuf> = Vec::new();
+
+    for line in stdout.lines() {
+        let line = line.map_err(|e| format!("IO error: {e}"))?;
+        if line.is_empty() { continue; }
+        let Ok(v) = serde_json::from_str::<serde_json::Value>(&line) else { continue; };
+        if v["reason"] == "compiler-artifact" && v["target"]["kind"].as_array()
+          .map(|kinds| kinds.iter().any(|k| k == "cdylib"))
+          .unwrap_or(false)
+        {
+            if let Some(arr) = v["filenames"].as_array() {
+                for p in arr {
+                    if let Some(s) = p.as_str() {
+                        if s.ends_with(&format!(".{}", target.ext)) {
+                            built_files.push(PathBuf::from(s));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let status = child.wait().map_err(|e| format!("cargo wait failed: {e}"))?;
     if !status.success() {
         return Err(format!("Build failed for {}", target.name));
     }
 
-    println!("Built {} successfully.", target.name);
-
-    let built_path = mod_path.join(format!(
-        "target/{}/release/{}.{}",
-        target.triple, lib_basename, target.ext
-    ));
-    if !built_path.exists() {
-        return Err(format!("Built file not found: {}", built_path.display()));
+    if built_files.is_empty() {
+        let guess = mod_path.join(format!("target/{}/release", target.triple));
+        return Err(format!("Built file not found (no cdylib reported). Checked cargo JSON; try look in: {}", guess.display()));
     }
 
-    let out_name = format!("{}-{}.{}", lib_basename, target.name, target.ext);
-    let out_path = out.join(out_name);
+    let chosen = choose_best(&built_files, target).ok_or_else(|| {
+        format!("No suitable {} found among: {:?}", target.ext, built_files)
+    })?;
+
+    println!("Built {} successfully.", target.name);
+
+    let file_name = chosen.file_name().unwrap().to_string_lossy().into_owned();
+    let out_file = add_suffix(&file_name, &format!("-{}", target.name));
+    let out_path = out.join(out_file);
 
     fs::create_dir_all(out).map_err(|e| format!("Failed to create output directory: {e}"))?;
-    fs::copy(&built_path, &out_path).map_err(|e| format!("Failed to copy file: {e}"))?;
+    fs::copy(&chosen, &out_path).map_err(|e| format!("Failed to copy file: {e}"))?;
 
     println!("Copied to {}", out_path.display());
     Ok(())
+}
+
+fn choose_best(files: &[PathBuf], target: &BuildTarget) -> Option<PathBuf> {
+    for f in files {
+        if f.extension().and_then(|e| e.to_str()) == Some(target.ext)
+          && f.to_string_lossy().contains(&format!("/target/{}/", target.triple))
+        {
+            return Some(f.clone());
+        }
+    }
+    files.iter()
+      .find(|f| f.extension().and_then(|e| e.to_str()) == Some(target.ext))
+      .cloned()
+}
+
+fn add_suffix(file_name: &str, suffix: &str) -> String {
+    if let Some((base, ext)) = file_name.rsplit_once(".") {
+        format!("{base}{suffix}.{ext}")
+    } else {
+        format!("{file_name}{suffix}")
+    }
 }

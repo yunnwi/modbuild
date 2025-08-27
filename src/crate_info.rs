@@ -1,3 +1,5 @@
+// modbuild/src/crate_info.rs
+
 use serde_json::Value;
 use std::path::PathBuf;
 use std::process::Command;
